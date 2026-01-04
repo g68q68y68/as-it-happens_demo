@@ -1,0 +1,55 @@
+NEW FEATURES
+Auto-discovery of SNMP type from custom OID collector
+Graphing of negative values (for custom OIDs)
+MIB browser for easier custom OID specification
+Saving graph templates
+Non-zero graph origin (graph bottom fixing, auto scaling for negative values)
+Add internationalization (suggested by Thierry Uso)
+Add French translation (suggested by Thierry Uso)
+Add export/import function for database transfer to another host (suggested by Karl Bousader)
+Add minimum polling interval config option (suggested by Carlos Sola)
+Add other interface variables e.g. packets per second, errors (suggested by Paul Cainkar)
+Add option to force deletion of collecting session (suggested by Miguel Angel)
+Add CLI option to run it on a headless server (suggested by Cristian Rojas)
+Add option to use ifAlias instead of ifDescr in graph titles by default (suggested by Yuri)
+Add option to save current layout on exit (suggested by Yuri)
+Implement CBWFQ MIB polling
+Implement HTTP response polling
+Add Debian package creation
+Add storage of all sessions by default (as config option)
+NBAR polling to eliminate averaging effects (use AllStatsTable with GetBulk?)
+Add ability to use "protocols", "services" and "hosts" files for resolution
+Add creation of labels directly on graph panel
+Add renaming of labels via double-click on graph panel
+Add drag-and-drop to move labels
+Add right-click deletion of labels
+Add perpetual file polling and graphing for packet capture graphs
+
+
+BUG FIXES
+Can't delete storing session after application crash
+Response collection doesn't work under Windows 7 (reported by Peter Williams)
+Graph panel not correctly callibrated with y-axis
+JVM crash in Self Defending Network when sound is enabled
+Crash when opening some capture files over a Windows DFS share
+Crash when handling out-of-bounds dates for capture graph
+Out-of-memory crash when graphing large capture files
+Net-SNMP processor data stops collecting except for "User" set
+Adding labels to multiple graphs for same session produces inconsistency with database labels
+NetFlow destination address mask setting doesn't do anything (looks like an IOS bug)
+No NBAR capability checking during NBAR collector initialization
+Resizing graphs of large packet captures causes application to freeze for a long time
+NullPointerException when opening two packet capture graphs concurrently
+
+
+TIDYING
+Document all classes using javadoc
+Implement unit testing framework using JUnit
+Implement application logging across all classes using log4j
+Investigate SNMPException types
+
+
+NOT FIXING
+Enforce referential integrity across database
+Replacement of Date/Time fields in database/capture panels with JFormattedTextField - prefer simple text interface
+
