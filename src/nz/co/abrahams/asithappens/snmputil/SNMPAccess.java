@@ -32,6 +32,16 @@ import org.snmp4j.mp.MPv3;
 import org.snmp4j.security.SecurityLevel;
 import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
+import org.snmp4j.security.AuthMD5;
+import org.snmp4j.security.AuthSHA;
+import org.snmp4j.security.AuthHMAC192SHA256;
+import org.snmp4j.security.AuthHMAC384SHA512;
+import org.snmp4j.security.PrivDES;
+import org.snmp4j.security.Priv3DES;
+import org.snmp4j.security.PrivAES128;
+import org.snmp4j.security.PrivAES192;
+import org.snmp4j.security.PrivAES256;
+import java.security.Security;
 import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TableEvent;
 import org.snmp4j.util.TableUtils;
@@ -147,6 +157,58 @@ public class SNMPAccess {
      * Logging provider
      */
     private static Logger logger = Logger.getLogger(SNMPAccess.class);
+    
+    /**
+     * Static initializer to ensure security protocols are registered at class load time.
+     * This prevents "encrypted error" issues when running from packaged JAR.
+     */
+    static {
+        try {
+            // Enable unlimited crypto policy for Java 8 (required for AES256, SHA2-256, SHA2-512 and other strong encryption)
+            Security.setProperty("crypto.policy", "unlimited");
+        } catch (Exception e) {
+            logger.warn("Could not set unlimited crypto policy: " + e.getMessage());
+        }
+        
+        // Initialize security protocols at class load time to ensure they are available
+        // This is critical for avoiding "encrypted error" when running from packaged JAR
+        SecurityProtocols securityProtocols = SecurityProtocols.getInstance();
+        
+        // Register authentication protocols
+        if (securityProtocols.getAuthenticationProtocol(AuthMD5.ID) == null) {
+            securityProtocols.addAuthenticationProtocol(new AuthMD5());
+        }
+        if (securityProtocols.getAuthenticationProtocol(AuthSHA.ID) == null) {
+            securityProtocols.addAuthenticationProtocol(new AuthSHA());
+        }
+        // SHA2-256: AuthHMAC192SHA256
+        if (securityProtocols.getAuthenticationProtocol(AuthHMAC192SHA256.ID) == null) {
+            securityProtocols.addAuthenticationProtocol(new AuthHMAC192SHA256());
+        }
+        // SHA2-512: AuthHMAC384SHA512
+        if (securityProtocols.getAuthenticationProtocol(AuthHMAC384SHA512.ID) == null) {
+            securityProtocols.addAuthenticationProtocol(new AuthHMAC384SHA512());
+        }
+        
+        // Register privacy protocols
+        if (securityProtocols.getPrivacyProtocol(PrivDES.ID) == null) {
+            securityProtocols.addPrivacyProtocol(new PrivDES());
+        }
+        if (securityProtocols.getPrivacyProtocol(Priv3DES.ID) == null) {
+            securityProtocols.addPrivacyProtocol(new Priv3DES());
+        }
+        if (securityProtocols.getPrivacyProtocol(PrivAES128.ID) == null) {
+            securityProtocols.addPrivacyProtocol(new PrivAES128());
+        }
+        if (securityProtocols.getPrivacyProtocol(PrivAES192.ID) == null) {
+            securityProtocols.addPrivacyProtocol(new PrivAES192());
+        }
+        if (securityProtocols.getPrivacyProtocol(PrivAES256.ID) == null) {
+            securityProtocols.addPrivacyProtocol(new PrivAES256());
+        }
+        
+        logger.debug("SNMP security protocols initialized at class load time");
+    }
     /**
      * IP address of target device
      */
@@ -239,13 +301,36 @@ public class SNMPAccess {
                         new OctetString(MPv3.createLocalEngineID()), 0);
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
-            snmp.getUSM().addUser(new OctetString(user.getUserName()),
-                    new org.snmp4j.security.UsmUser(
+            
+            // Create UsmUser with proper null handling for protocols
+            org.snmp4j.security.UsmUser usmUser;
+            if (user.getUserAuthProtocol().getSnmp4jID() == null) {
+                // NoAuthNoPriv
+                usmUser = new org.snmp4j.security.UsmUser(
+                    new OctetString(user.getUserName()),
+                    null,
+                    null,
+                    null,
+                    null);
+            } else if (user.getUserPrivProtocol().getSnmp4jID() == null) {
+                // AuthNoPriv
+                usmUser = new org.snmp4j.security.UsmUser(
+                    new OctetString(user.getUserName()),
+                    user.getUserAuthProtocol().getSnmp4jID(),
+                    new OctetString(user.getUserAuthKey()),
+                    null,
+                    null);
+            } else {
+                // AuthPriv
+                usmUser = new org.snmp4j.security.UsmUser(
                     new OctetString(user.getUserName()),
                     user.getUserAuthProtocol().getSnmp4jID(),
                     new OctetString(user.getUserAuthKey()),
                     user.getUserPrivProtocol().getSnmp4jID(),
-                    new OctetString(user.getUserPrivKey())));
+                    new OctetString(user.getUserPrivKey()));
+            }
+            
+            snmp.getUSM().addUser(new OctetString(user.getUserName()), usmUser);
 
             target = new UserTarget();
             ((UserTarget) target).setSecurityLevel(user.getUserLevel().getSnmp4jID());
@@ -268,6 +353,10 @@ public class SNMPAccess {
     }
 
     private void initSNMP4J() throws IOException {
+        // Security protocols are already registered in static initializer
+        // This method only initializes transport and SNMP instance
+        
+        // Initialize transport and SNMP instance
         if (transport == null) {
             transport = new DefaultUdpTransportMapping();
         }

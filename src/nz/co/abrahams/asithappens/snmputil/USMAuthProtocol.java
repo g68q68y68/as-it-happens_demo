@@ -2,14 +2,17 @@ package nz.co.abrahams.asithappens.snmputil;
 
 import org.snmp4j.security.AuthMD5;
 import org.snmp4j.security.AuthSHA;
+import org.snmp4j.security.AuthHMAC192SHA256;
+import org.snmp4j.security.AuthHMAC384SHA512;
 import org.snmp4j.smi.OID;
 
 public enum USMAuthProtocol {
 
-    NoAuth(1, null), MD5(2, AuthMD5.ID), SHA(3, AuthSHA.ID);
+    NoAuth(1, null), MD5(2, AuthMD5.ID), SHA(3, AuthSHA.ID),
+    SHA256(4, AuthHMAC192SHA256.ID), SHA512(5, AuthHMAC384SHA512.ID);
 
     int index;
-    
+
     OID snmp4jID;
 
     USMAuthProtocol(int index, OID snmp4jID) {
@@ -18,8 +21,8 @@ public enum USMAuthProtocol {
     }
 
     public static USMAuthProtocol getAuthProtocol(int desiredIndex) {
-        for ( USMAuthProtocol protocol : USMAuthProtocol.values() ) {
-            if ( protocol.index == desiredIndex ) {
+        for (USMAuthProtocol protocol : USMAuthProtocol.values()) {
+            if (protocol.index == desiredIndex) {
                 return protocol;
             }
         }
@@ -29,9 +32,9 @@ public enum USMAuthProtocol {
     public int getIndex() {
         return index;
     }
-    
+
     public OID getSnmp4jID() {
         return snmp4jID;
     }
-    
+
 }
